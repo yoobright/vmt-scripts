@@ -43,6 +43,11 @@ def handler_raw_list(raw_list):
             ret_list.extend(handler_ip_range(ip))
     return uniqify_list(ret_list)
 
+def ip2ipmi(ip):
+    ip_tmp = ip.split('.')
+    ip_tmp[1] = '100'
+    ip_tmp[3] = ip_tmp[3][-2]
+    return '.'.join(ip_tmp)
 
 if __name__ == '__main__':
     ip_list = list(netaddr.iter_iprange('192.0.2.1', '192.0.2.14'))
@@ -52,3 +57,5 @@ if __name__ == '__main__':
     print handler_ip_range('192.0.2.1-192.0.2.14')
     print handler_raw_list(trans_raw)
     print uniqify_list(['1', '1', '3', '1', '1', '2'])
+    print ip2ipmi("10.107.8.80")
+    pass

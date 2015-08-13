@@ -1,17 +1,22 @@
 from fabric.api import *
+from fabric.colors import *
 from fabric.contrib import files
 import time
+from ip_utils import *
+import stack_host
 
 env.password = '111111'
 env.user = 'root'
 volt_ip = '10.107.8.180'
 pkg_dir = '/home/stack'
 
-computer_ip = [
-#'10.107.8.180',
-'10.107.8.170',
-'10.107.8.160',
-]
+
+computer_ip = stack_host.ctrl + stack_host.cpu
+
+@task()
+def list_ip():
+    print computer_ip
+    print cyan("%s ip in list" % len(computer_ip))
 
 @task()
 @hosts(computer_ip)
@@ -21,39 +26,36 @@ def test_ls():
 
 @task()
 @hosts(computer_ip)
-@parallel(pool_size=10)
+@parallel(pool_size=20)
 def install_pkg():
     with settings(show('debug'),
                   #hide('running'),
                   warn_only=True
                   ):
-        pkg_dir = '/root'
         with cd(pkg_dir+'/packages/'):
             run("sh install.sh")
 
 
 @task()
 @hosts(computer_ip)
-@parallel(pool_size=10)
+@parallel(pool_size=20)
 def deploy_cfg():
     with settings(show('debug'),
                   hide('running'),
                   warn_only=True
                   ):
-        pkg_dir = '/root'
         with cd(pkg_dir+'/packages/VMT-demo'):
             run("python vmt-initcfg.py %s %s" % (volt_ip, env.host))
         run("cat /etc/virtman/virtman.conf")
 
 @task()
 @hosts(computer_ip)
-@parallel(pool_size=10)
+@parallel(pool_size=20)
 def deploy_cache():
     with settings(show('debug'),
                   hide('running'),
                   warn_only=True
                   ):
-        pkg_dir = '/home/stack'
         if not files.exists('%s/blocks/cache.blk' % pkg_dir):
             run("mkdir -p %s/blocks" % pkg_dir)
             run("dd if=/dev/zero of=%s/blocks/cache.blk bs=1M count=10k" %
@@ -65,18 +67,20 @@ def deploy_cache():
 
 @task()
 @hosts(volt_ip)
-@parallel(pool_size=10)
+#@parallel(pool_size=10)
 def stop_volt():
     with settings(show('debug'),
                   hide('running'),
                   warn_only=True
                   ):
         run("start-stop-daemon  --stop -p /var/run/volt.pid")
-
+        ps_out=run("ps aux | grep volt-api | wc -l", quiet=True)
+        if int(ps_out) == 2:
+            print green("volt stop completed!")
 
 @task()
 @hosts(volt_ip)
-@parallel(pool_size=10)
+#@parallel(pool_size=10)
 def run_volt():
     with settings(show('debug'),
                   hide('running'),
@@ -84,11 +88,13 @@ def run_volt():
         run("start-stop-daemon --start -b -m -p /var/run/volt.pid --exec"
             " /usr/local/bin/volt-api -- --config-file=/etc/volt/volt.conf",
             pty=False)
-        run("ps aux | grep volt")
+        ps_out=run("ps aux | grep volt-api | wc -l", quiet=True)
+        if int(ps_out) == 3:
+            print green("volt start completed!")
 
-task()
+@task()
 @hosts(computer_ip)
-@parallel(pool_size=10)
+@parallel(pool_size=20)
 def stop_server():
     with settings(show('debug'),
                   hide('running'),
@@ -100,10 +106,27 @@ def stop_server():
 
 @task()
 @hosts(computer_ip)
-@parallel(pool_size=10)
+@parallel(pool_size=20)
 def run_server():
     with settings(show('debug'),
                   hide('running'),
                   ):
         run("start-stop-daemon --start -b -m -p /var/run/virtman.pid --exec"
             " /root/packages/virtman/bin/virtmanserver.py", pty=False)
+@task()
+@hosts(stack_host.cinder + stack_host.cpu)
+@parallel(pool_size=20)
+def ntpdate():
+    run("ntpdate %s" % stack_host.ctrl[0])
+
+@task()
+@hosts(computer_ip)
+@parallel(pool_size=10)
+def su_stack():
+    run("cd /opt/devstack/tools && ./create-stack-user.sh")
+
+@task()
+@hosts(computer_ip)
+@parallel(pool_size=10)
+def vmt_reboot():
+    reboot()
