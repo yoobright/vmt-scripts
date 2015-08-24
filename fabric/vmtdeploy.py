@@ -56,9 +56,10 @@ def deploy_cache():
                   hide('running'),
                   warn_only=True
                   ):
+        #run("rm -rf %s/blocks/cache.blk" % pkg_dir)
         if not files.exists('%s/blocks/cache.blk' % pkg_dir):
             run("mkdir -p %s/blocks" % pkg_dir)
-            run("dd if=/dev/zero of=%s/blocks/cache.blk bs=1M count=10k" %
+            run("dd if=/dev/zero of=%s/blocks/cache.blk bs=1M count=20k" %
                 pkg_dir)
         run("chown -R stack:stack %s/blocks" % pkg_dir)
         run("losetup -d /dev/loop0")

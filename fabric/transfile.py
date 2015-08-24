@@ -10,14 +10,14 @@ env.password = '111111'
 env.user = 'root'
 
 
-trans_hosts = stack_host.ctrl + stack_host.cpu
+trans_hosts = stack_host.ctrl + stack_host.cpu + stack_host.cinder
 
 def my_put(file_dir, chown=None):
     if not os.path.exists(file_dir):
         print "%s is not exists in local!!!" % file_dir
         return
     if not files.exists(file_dir):
-        run("mkdir %s" % file_dir) 
+        run("mkdir -p %s" % file_dir) 
     run("rm -rf %s" % os.path.join(file_dir, '*'))
     put(os.path.join(file_dir, '*'), file_dir, mirror_local_mode=True)
     if len([f for f in os.listdir(file_dir) if f.startswith('.')]) > 0:
@@ -83,8 +83,17 @@ def dev_lib():
         my_put('/opt/devstack/lib', chown='stack:stack')
 
 @task()
+@hosts(trans_hosts)
+@parallel(pool_size=20)
+def script():
+    with settings(show('debug'),
+                  hide('running'),
+                  warn_only=True):
+        my_put('/home/stack/packages/VMT-demo', chown='stack:stack')
+
+@task()
 def stack_pkg():
-    execute(cp_pkg)
+    #execute(cp_pkg)
     execute(do_stack_pkg)
 
 

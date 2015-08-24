@@ -36,8 +36,17 @@ def list_ip():
     print cyan("%s computer totally" % len(cpu_hosts))
 
 @parallel(pool_size=20)
+@with_settings(warn_only=True, show='debug')
 def unstack():
     run("/opt/devstack/unstack.sh", timeout=120)
+
+@task()
+@roles(['cinder'])
+@parallel(pool_size=20)
+@with_settings(warn_only=True, show='debug')
+def rm_vol():
+    run("rm -rf /opt/stack/data/cinder/*")
+
 
 
 @parallel(pool_size=20)
@@ -129,7 +138,7 @@ def set_nova():
         run("cd /opt/stack/nova/nova/virt && cp block_device.py.vmthunder block_device.py")
 
 @task()
-@roles(['computer', 'controller'])
+@roles(['computer', 'controller', 'cinder'])
 @parallel(pool_size=20)
 def drop_database():
     with settings(show('debug'),
@@ -142,17 +151,89 @@ def drop_database():
         my_sudo('mysql -uroot -pnova -e "DROP DATABASE IF EXISTS heat;"')
         my_sudo('mysql -uroot -pnova -e "DROP DATABASE IF EXISTS neutron_ml2;"')
 
-@task(default=True)
-#@hosts(trans_hosts)
-def my_unstack():
-    execute(unstack, roles=['computer'])
-    execute(unstack, roles=['cinder'])
-    execute(unstack, roles=['controller'])
-    execute(rebuild)
+@task()
+@roles(['computer'])
+@parallel(pool_size=20)
+def rm_instance():
+    with settings(show('debug'),
+                  hide('running'),
+                  warn_only=True):
+        run("cd /home/stack/packages/VMT-demo && sh rm_instance.sh", shell=True)
 
-@task(default=True)
+@task()
+@roles(['computer', 'cinder'])
+@parallel(pool_size=20)
+def ntpdate():
+    with settings(show('debug'),
+                  hide('running'),
+                  warn_only=True):
+        my_sudo("ntpdate 10.107.8.70")
+
+
+@task()
+@roles(['computer', 'controller', 'cinder'])
+@parallel(pool_size=20)
+def rm_log():
+    with settings(show('debug'),
+                  hide('running'),
+                  warn_only=True):
+        my_sudo('rm -rf /opt/stack/logs/*')
+
+@task()
+@roles(['cinder'])
+@parallel(pool_size=20)
+def rm_vol_lock():
+    with settings(show('debug'),
+                  hide('running'),
+                  warn_only=True):
+        my_sudo("rm -rf /var/lock/lvm/*")
+
+@task()
+#@hosts(trans_hosts)
+def unstack_ctrl():
+    execute(unstack, roles=['controller'])
+
+@task()
+#@hosts(trans_hosts)
+def unstack_cpu():
+    execute(unstack, roles=['computer'])
+
+@task()
+#@hosts(trans_hosts)
+def unstack_cinder():
+    execute(rm_vol_lock)
+    execute(unstack, roles=['cinder'])
+
+@task()
+#@hosts(trans_hosts)
+def stack_ctrl():
+    execute(stack, roles=['controller'])
+
+@task()
+#@hosts(trans_hosts)
+def stack_cpu():
+    execute(stack, roles=['computer'])
+
+@task()
+#@hosts(trans_hosts)
+def stack_cinder():
+    execute(stack, roles=['cinder'])
+
+
+@task()
+#@hosts(trans_hosts)
+@with_settings(warn_only=True, show='debug')
+def my_unstack():
+    execute(unstack_cpu)
+    #execute(rm_instance)
+    if env.roledefs['cinder']:
+        execute(unstack_cinder)
+    execute(unstack_ctrl)
+
+@task()
 #@hosts(trans_hosts)
 def my_stack():
-    execute(stack, roles=['controller'])
-    execute(stack, roles=['cinder'])
-    execute(stack, roles=['computer'])
+    execute(stack_ctrl)
+    if env.roledefs['cinder']:
+        execute(stack_cinder)
+    execute(stack_cpu)
