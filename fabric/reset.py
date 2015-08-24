@@ -8,6 +8,7 @@ MAX_THREAD = 10
 
 check_ips = stack_host.ctrl + stack_host.cpu
 
+
 def check_connection(ip):
     check_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     check_socket.settimeout(0.5)
@@ -23,6 +24,7 @@ def check_connection(ip):
 def add_failed_ip(ip, failed_ip_list=[]):
     if not check_connection(ip):
         failed_ip_list.append(ip)
+
 
 def ip2ipmi(ip):
     ip_tmp = ip.split('.')

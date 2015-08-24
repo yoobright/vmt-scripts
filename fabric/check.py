@@ -18,6 +18,7 @@ def list_ip():
     print trans_hosts
     print cyan("%s ip in list" % len(trans_hosts))
 
+
 @hosts(trans_hosts)
 @parallel(pool_size=20)
 def do_check_dm():
@@ -27,6 +28,7 @@ def do_check_dm():
         dm_out = run("dmsetup table | grep cache_fcg") or None
         if dm_out is not None:
            return True
+
 
 @task()
 @hosts(trans_hosts)
@@ -60,6 +62,7 @@ def check_loop():
         if not loop_out:
             loop_not_exist_list.append(env.host)
 
+
 @task()
 def check_loop_exist():
     global loop_not_exist_list 
@@ -71,7 +74,6 @@ def check_loop_exist():
         print green("loop cache exist")
 
 
-
 @hosts(stack_host.cpu)
 @parallel(pool_size=20)
 def do_check_broken():
@@ -81,7 +83,8 @@ def do_check_broken():
         check_broken_out = run('head -n 100 /opt/stack/logs/screen-n-cpu.log | grep "Ignoring vmthunder"', shell=True) or None
         if check_broken_out:
            return True
-        
+
+
 @task()
 def check_broken():
     ex_out = execute(do_check_broken)

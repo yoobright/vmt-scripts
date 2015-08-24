@@ -12,12 +12,14 @@ def check_ip(string):
         return True
     return False
 
+
 def check_ips(string):
     pattern = re.compile(ip_pattern+'-'+ip_pattern+r':*\d*'+r'\Z')
     match = pattern.match(string)
     if match:
         return True
     return False
+
 
 def handler_ip_range(string):
     step = 1
@@ -28,6 +30,7 @@ def handler_ip_range(string):
     ip_begin = p_boundary[0]
     ip_end = p_boundary[-1]
     return map(lambda x: str(x), list(netaddr.iter_iprange(ip_begin, ip_end))[0::step])
+
 
 def handler_raw_list(raw_list):
     ret_list = []

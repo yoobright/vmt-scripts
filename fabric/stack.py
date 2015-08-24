@@ -22,10 +22,12 @@ env.roledefs = {
     'cinder': cinder_hosts,
 }
 
+
 def my_sudo(cmd):
     global sudo_password
     with settings(password=sudo_password):
         return sudo(cmd)
+
 
 @task()
 def list_ip():
@@ -35,10 +37,12 @@ def list_ip():
     print cpu_hosts
     print cyan("%s computer totally" % len(cpu_hosts))
 
+
 @parallel(pool_size=20)
 @with_settings(warn_only=True, show='debug')
 def unstack():
     run("/opt/devstack/unstack.sh", timeout=120)
+
 
 @task()
 @roles(['cinder'])
@@ -48,11 +52,11 @@ def rm_vol():
     run("rm -rf /opt/stack/data/cinder/*")
 
 
-
 @parallel(pool_size=20)
 @with_settings(warn_only=True, show='debug')
 def stack():
     run("/opt/devstack/stack.sh")
+
 
 @task()
 @roles(['controller', 'computer'])
@@ -60,11 +64,13 @@ def stack():
 def my_reboot():
     reboot(wait=300)
 
+
 @task()
 @roles(['controller', 'computer'])
 @parallel(pool_size=20)
 def my_losetup():
     my_sudo('losetup -a')
+
 
 @task()
 @roles(['controller', 'computer'])
@@ -74,6 +80,7 @@ def stop_nm():
     my_sudo('service network-manager stop')
     my_sudo('apt-get -y install sysv-rc-conf')
     my_sudo('sysv-rc-conf network-manager off')
+
 
 @task()
 @roles(['controller', 'computer'])
@@ -92,6 +99,7 @@ def rebuild():
         with cd(pkg_dir+'/packages/VMT-demo'):
             my_sudo("python vmt-rebuild.py")
 
+
 @task()
 @roles(['computer'])
 @parallel(pool_size=20)
@@ -100,6 +108,7 @@ def start_tgt():
                   hide('running'),
                   warn_only=True):
         my_sudo("/etc/init.d/tgt start")
+
 
 @task()
 @roles(['computer', 'controller'])
@@ -116,6 +125,7 @@ def reset_br():
         #my_sudo("virsh net-destroy default")
         #my_sudo("virsh net-undefine default")
 
+
 @task()
 @roles(['computer', 'controller'])
 @parallel(pool_size=20)
@@ -127,6 +137,7 @@ def reset_nova():
         run("cd /opt/stack/nova/nova/virt && cp block_device.py.bak block_device.py ")
         my_sudo("rm -rf /usr/local/lib/python2.7/dist-packages/nova*")
 
+
 @task()
 @roles(['computer', 'controller'])
 @parallel(pool_size=20)
@@ -136,6 +147,7 @@ def set_nova():
                   warn_only=True):
         run("cd /opt/stack/nova/nova/compute && cp manager.py.vmthunder manager.py")
         run("cd /opt/stack/nova/nova/virt && cp block_device.py.vmthunder block_device.py")
+
 
 @task()
 @roles(['computer', 'controller', 'cinder'])
@@ -151,6 +163,7 @@ def drop_database():
         my_sudo('mysql -uroot -pnova -e "DROP DATABASE IF EXISTS heat;"')
         my_sudo('mysql -uroot -pnova -e "DROP DATABASE IF EXISTS neutron_ml2;"')
 
+
 @task()
 @roles(['computer'])
 @parallel(pool_size=20)
@@ -159,6 +172,7 @@ def rm_instance():
                   hide('running'),
                   warn_only=True):
         run("cd /home/stack/packages/VMT-demo && sh rm_instance.sh", shell=True)
+
 
 @task()
 @roles(['computer', 'cinder'])
@@ -179,6 +193,7 @@ def rm_log():
                   warn_only=True):
         my_sudo('rm -rf /opt/stack/logs/*')
 
+
 @task()
 @roles(['cinder'])
 @parallel(pool_size=20)
@@ -188,40 +203,39 @@ def rm_vol_lock():
                   warn_only=True):
         my_sudo("rm -rf /var/lock/lvm/*")
 
+
 @task()
-#@hosts(trans_hosts)
 def unstack_ctrl():
     execute(unstack, roles=['controller'])
 
+
 @task()
-#@hosts(trans_hosts)
 def unstack_cpu():
     execute(unstack, roles=['computer'])
 
+
 @task()
-#@hosts(trans_hosts)
 def unstack_cinder():
     execute(rm_vol_lock)
     execute(unstack, roles=['cinder'])
 
+
 @task()
-#@hosts(trans_hosts)
 def stack_ctrl():
     execute(stack, roles=['controller'])
 
+
 @task()
-#@hosts(trans_hosts)
 def stack_cpu():
     execute(stack, roles=['computer'])
 
+
 @task()
-#@hosts(trans_hosts)
 def stack_cinder():
     execute(stack, roles=['cinder'])
 
 
 @task()
-#@hosts(trans_hosts)
 @with_settings(warn_only=True, show='debug')
 def my_unstack():
     execute(unstack_cpu)
@@ -230,8 +244,8 @@ def my_unstack():
         execute(unstack_cinder)
     execute(unstack_ctrl)
 
+
 @task()
-#@hosts(trans_hosts)
 def my_stack():
     execute(stack_ctrl)
     if env.roledefs['cinder']:

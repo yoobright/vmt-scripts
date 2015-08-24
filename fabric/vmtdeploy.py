@@ -13,16 +13,19 @@ pkg_dir = '/home/stack'
 
 computer_ip = stack_host.ctrl + stack_host.cpu
 
+
 @task()
 def list_ip():
     print computer_ip
     print cyan("%s ip in list" % len(computer_ip))
+
 
 @task()
 @hosts(computer_ip)
 @parallel(pool_size=1)
 def test_ls():
     run("ls -al")
+
 
 @task()
 @hosts(computer_ip)
@@ -93,6 +96,7 @@ def run_volt():
         if int(ps_out) == 3:
             print green("volt start completed!")
 
+
 @task()
 @hosts(computer_ip)
 @parallel(pool_size=20)
@@ -114,17 +118,21 @@ def run_server():
                   ):
         run("start-stop-daemon --start -b -m -p /var/run/virtman.pid --exec"
             " /root/packages/virtman/bin/virtmanserver.py", pty=False)
+
+
 @task()
 @hosts(stack_host.cinder + stack_host.cpu)
 @parallel(pool_size=20)
 def ntpdate():
     run("ntpdate %s" % stack_host.ctrl[0])
 
+
 @task()
 @hosts(computer_ip)
 @parallel(pool_size=10)
 def su_stack():
     run("cd /opt/devstack/tools && ./create-stack-user.sh")
+
 
 @task()
 @hosts(computer_ip)

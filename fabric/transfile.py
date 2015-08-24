@@ -32,6 +32,7 @@ def list_ip():
     print trans_hosts
     print cyan("%s ip in list" % len(trans_hosts))
 
+
 @task()
 @hosts(trans_hosts)
 @parallel(pool_size=20)
@@ -41,9 +42,11 @@ def root_pkg():
                   warn_only=True):
         my_put('/root/packages/')
 
+
 @runs_once
 def cp_pkg():
     local('cp -r /root/packages/ /home/stack')
+
 
 @task()
 @hosts(trans_hosts)
@@ -54,6 +57,7 @@ def virtman():
                   warn_only=True):
         my_put('/home/stack/packages/virtman', chown='stack:stack')
         run('cd /home/stack/packages/virtman && python setup.py install')
+
 
 @task()
 @hosts(trans_hosts)
@@ -82,6 +86,7 @@ def dev_lib():
                   warn_only=True):
         my_put('/opt/devstack/lib', chown='stack:stack')
 
+
 @task()
 @hosts(trans_hosts)
 @parallel(pool_size=20)
@@ -90,6 +95,7 @@ def script():
                   hide('running'),
                   warn_only=True):
         my_put('/home/stack/packages/VMT-demo', chown='stack:stack')
+
 
 @task()
 def stack_pkg():
