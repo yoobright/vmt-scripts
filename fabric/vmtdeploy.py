@@ -51,6 +51,7 @@ def deploy_cfg():
             run("python vmt-initcfg.py %s %s" % (volt_ip, env.host))
         run("cat /etc/virtman/virtman.conf")
 
+
 @task()
 @hosts(computer_ip)
 @parallel(pool_size=20)
@@ -59,7 +60,7 @@ def deploy_cache():
                   hide('running'),
                   warn_only=True
                   ):
-        #run("rm -rf %s/blocks/cache.blk" % pkg_dir)
+        run("rm -rf %s/blocks/cache.blk" % pkg_dir)
         if not files.exists('%s/blocks/cache.blk' % pkg_dir):
             run("mkdir -p %s/blocks" % pkg_dir)
             run("dd if=/dev/zero of=%s/blocks/cache.blk bs=1M count=20k" %
@@ -81,6 +82,7 @@ def stop_volt():
         ps_out=run("ps aux | grep volt-api | wc -l", quiet=True)
         if int(ps_out) == 2:
             print green("volt stop completed!")
+
 
 @task()
 @hosts(volt_ip)
@@ -136,6 +138,6 @@ def su_stack():
 
 @task()
 @hosts(computer_ip)
-@parallel(pool_size=10)
+@parallel(pool_size=30)
 def vmt_reboot():
     reboot()

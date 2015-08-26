@@ -2,6 +2,7 @@ import os
 from fabric.api import *
 from fabric.colors import *
 from fabric.contrib import files
+from fabric.contrib.project import rsync_project
 from ip_utils import *
 
 import stack_host
@@ -11,6 +12,7 @@ env.user = 'root'
 
 
 trans_hosts = stack_host.ctrl + stack_host.cpu + stack_host.cinder
+
 
 def my_put(file_dir, chown=None):
     if not os.path.exists(file_dir):
@@ -25,6 +27,18 @@ def my_put(file_dir, chown=None):
         put(os.path.join(file_dir, '.*'), file_dir, mirror_local_mode=True)
     if chown:
         run("chown -R %s %s" % (chown, file_dir))
+
+
+def my_sync(file_dir):
+    if os.path.isdir(file_dir):
+        print cyan("rsync %s" % file_dir)
+        print env.host_string
+        local("sshpass -p %s rsync  -avzrtopgL --delete %s/* %s@%s:%s" %
+              (env.password, file_dir, env.user, env.host_string, file_dir))
+        #rsync_project(file_dir, local_dir='%s/*' % file_dir,
+        #              default_opts="-avzrtopgL --delete")
+    else:
+        put(file_dir, file_dir, mirror_local_mode=True)
 
 
 @task()
@@ -49,7 +63,7 @@ def cp_pkg():
 
 
 @task()
-@hosts(trans_hosts)
+@hosts(stack_host.ctrl + stack_host.cpu)
 @parallel(pool_size=20)
 def virtman():
     with settings(show('debug'),
@@ -66,7 +80,7 @@ def nova():
     with settings(show('debug'),
                   hide('running'),
                   warn_only=True):
-        my_put('/opt/stack/nova', chown='stack:stack')
+        my_sync('/opt/stack/nova')
 
 
 @hosts(trans_hosts)
@@ -76,6 +90,7 @@ def do_stack_pkg():
                   hide('running'),
                   warn_only=True):
         my_put('/home/stack/packages/', chown='stack:stack')
+
 
 @task()
 @hosts(trans_hosts)
@@ -98,15 +113,19 @@ def script():
 
 
 @task()
+@hosts(trans_hosts)
+@parallel(pool_size=20)
 def stack_pkg():
-    #execute(cp_pkg)
-    execute(do_stack_pkg)
+    with settings(show('debug'),
+                  hide('running'),
+                  warn_only=True):
+        my_sync('/home/stack/packages')
 
 
 @task()
 @hosts(trans_hosts)
 @parallel(pool_size=20)
-def opt_pkg():
+def opt_stack():
     with settings(show('debug'),
                   hide('running'),
                   warn_only=True):

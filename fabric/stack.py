@@ -89,6 +89,10 @@ def rebuild():
     with settings(show('debug'),
                   hide('running'),
                   warn_only=True):
+        my_sudo('iscsiadm -m node -u')
+        my_sudo('tgt-admin --force --delete ALL')
+        my_sudo('rm -rf /etc/tgt/stack.d/*')
+        my_sudo('rm -rf /etc/iscsi/nodes/*')
         virsh_list_out = my_sudo("virsh list| awk '$1 ~ /[0-9]+/ {print $2}'")
         if virsh_list_out:
             instance_list = virsh_list_out.split('\r\n')
