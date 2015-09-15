@@ -84,7 +84,7 @@ def stop_nm():
 
 @task()
 @roles(['controller', 'computer'])
-@parallel(pool_size=20)
+@parallel(pool_size=30)
 def rebuild():
     with settings(show('debug'),
                   hide('running'),

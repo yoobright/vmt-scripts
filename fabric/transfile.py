@@ -74,7 +74,7 @@ def virtman():
 
 
 @task()
-@hosts(trans_hosts)
+@hosts(stack_host.cpu + stack_host.cinder)
 @parallel(pool_size=20)
 def nova():
     with settings(show('debug'),
@@ -99,7 +99,7 @@ def dev_lib():
     with settings(show('debug'),
                   hide('running'),
                   warn_only=True):
-        my_put('/opt/devstack/lib', chown='stack:stack')
+        my_sync('/opt/devstack/lib')
 
 
 @task()
@@ -119,7 +119,8 @@ def stack_pkg():
     with settings(show('debug'),
                   hide('running'),
                   warn_only=True):
-        my_sync('/home/stack/packages')
+        my_put('/home/stack/packages/', chown='stack:stack')
+        #my_sync('/home/stack/packages')
 
 
 @task()
